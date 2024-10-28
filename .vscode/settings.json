@@ -1,6 +1,7 @@
 {
     "pixelbyte.love2d.srcDir": "./src/",
     "Lua.diagnostics.disable": [
-        "duplicate-set-field"
+        "duplicate-set-field",
+        "inject-field"
     ]
 }

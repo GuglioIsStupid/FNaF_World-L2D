@@ -1,8 +1,6 @@
 local Frame = BaseFrame:extend("TitleScreenFrame")
 
 function Frame:create()
-    BaseFrame.new(self)
-
     self.bg = love.graphics.newImage("TitleScreen/Background.png")
     self.bg.alpha = 0
     
@@ -29,13 +27,20 @@ function Frame:create()
 
     Timer.tween(2.9, self.button, { x = 250 })
 
-    self.theme = love.audio.newSource("TitleTheme.mp3", "stream")
-    self.theme:setLooping(true)
-    self.theme:play()
+    self.blackScreen = love.graphics.rectangle("fill", 0, 0, 800, 600)
+    self.blackScreen.alpha = 0
+    self.blackScreen.color = { 0, 0, 0 }
+    self:add(self.blackScreen)
+
+    TITLEMUSIC:play()
 end
 
-function Frame:update(dt)
-    BaseFrame.update(self, dt)
+function Frame:mousepressed(x, y, button)
+    if self.button:collision(x, y) then
+        Timer.tween(1, self.blackScreen, { alpha = 1 }, "linear", function()
+            switchFrame("FileSetup")
+        end)
+    end
 end
 
 return Frame

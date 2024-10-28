@@ -15,6 +15,7 @@ function love.graphics.newImage(path)
         width = img:getWidth(),
         height = img:getHeight(),
         alpha = 1,
+        visible = true,
         setFilter = function(self, min, mag)
             self.img:setFilter(min, mag)
         end,
@@ -22,10 +23,13 @@ function love.graphics.newImage(path)
             w, h = w or 1, h or 1
             return self.x < x + w and x < self.x + self.width and self.y < y + h and y < self.y + self.height
         end,
-        draw = function(self)
+        draw = function(self, alpha)
+            if not self.visible then return end
+            local lastColor = {love.graphics.getColor()}
             love.graphics.push()
-            love.graphics.setColor(1, 1, 1, self.alpha)
+            love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], self.alpha * (alpha or 1))
             o_graphics_draw(self.img, self.x, self.y, self.angle, self.scale.x, self.scale.y)
+            love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], lastColor[4])
             love.graphics.pop()
         end
     }
@@ -84,6 +88,8 @@ function love.graphics.newAnim(folder, fps, loops)
         alpha = 1,
         fps = fps or 24,
         loops = loops or false,
+        playing = true,
+        visible = true,
         setFilter = function(self, min, mag)
             for _, img in ipairs(self.images) do
                 img:setFilter(min, mag)
@@ -93,16 +99,32 @@ function love.graphics.newAnim(folder, fps, loops)
             w, h = w or 1, h or 1
             return self.x < x + w and x < self.x + self.images[1].width and self.y < y + h and y < self.y + self.images[1].height
         end,
-        draw = function(self)
+        draw = function(self, alpha)
+            if not self.visible then return end
+            local lastColor = {love.graphics.getColor()}
             love.graphics.push()
-            love.graphics.setColor(1, 1, 1, self.alpha)
+            love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], self.alpha * (alpha or 1))
             love.graphics.draw(self.images[self.current], self.x, self.y, self.angle, self.scale.x, self.scale.y)
+            love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], lastColor[4])
             love.graphics.pop()
         end,
         update = function(self, dt)
+            if not self.playing then return end
             self.unflooredCurrent = self.unflooredCurrent + self.fps * dt
             self.current = math.floor(self.unflooredCurrent)
             if self.current > #self.images then
+                local reset = false
+                if self.callback then
+                    reset = self.callback(self)
+                    self.callback = nil
+                end
+                if reset then 
+                    self.current = #self.images
+                    self.unflooredCurrent = #self.images
+                    self.playing = false
+
+                    return
+                end
                 if self.loops then
                     self.current = 1
                     self.unflooredCurrent = 1
@@ -111,6 +133,33 @@ function love.graphics.newAnim(folder, fps, loops)
                     self.unflooredCurrent = #self.images
                 end
             end
+        end
+    }
+end
+
+local o_graphics_rectangle = love.graphics.rectangle
+function love.graphics.rectangle(mode, x, y, width, height, radius, segments)
+    -- returns a table with the same properties as an image
+    ---@diagnostic disable-next-line: redundant-return-value
+    return {
+        x = x,
+        y = y,
+        width = width,
+        height = height,
+        mode = mode,
+        radius = radius,
+        segments = segments,
+        alpha = 1,
+        color = {1, 1, 1},
+        visible = true,
+        draw = function(self, alpha)
+            if not self.visible then return end
+            love.graphics.push()
+            local last = {love.graphics.getColor()}
+            love.graphics.setColor(self.color[1], self.color[2], self.color[3], self.alpha * (alpha or 1))
+            o_graphics_rectangle(self.mode, self.x, self.y, self.width, self.height, self.radius, self.segments)
+            love.graphics.setColor(last[1], last[2], last[3], last[4])
+            love.graphics.pop()
         end
     }
 end

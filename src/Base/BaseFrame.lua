@@ -2,6 +2,11 @@ local BaseFrame = Class:extend("BaseFrame")
 
 function BaseFrame:new()
     self.objects = {}
+    self.alpha = 1
+end
+
+function BaseFrame:clear()
+    self.objects = {}
 end
 
 function BaseFrame:add(object)
@@ -17,6 +22,9 @@ function BaseFrame:remove(object)
     end
 end
 
+function BaseFrame:create()
+end
+
 function BaseFrame:update(dt)
     for _, object in ipairs(self.objects) do
         if object.update then
@@ -25,10 +33,18 @@ function BaseFrame:update(dt)
     end
 end
 
+function BaseFrame:mousepressed(x, y, button)
+    for _, object in ipairs(self.objects) do
+        if object.mousepressed then
+            object:mousepressed(x, y, button)
+        end
+    end
+end
+
 function BaseFrame:draw()
     for _, object in ipairs(self.objects) do
         if object.draw then
-            object:draw()
+            object:draw(self.alpha)
         end
     end
 end

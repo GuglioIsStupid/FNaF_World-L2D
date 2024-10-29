@@ -1,11 +1,21 @@
 local o_graphics_newImage = love.graphics.newImage
 local o_graphics_newQuad = love.graphics.newQuad
 local o_graphics_draw = love.graphics.draw
+love.graphics.baseNewImage = o_graphics_newImage
+love.graphics.baseNewQuad = o_graphics_newQuad
+love.graphics.baseDraw = o_graphics_draw
+local g_cache = {}
 --- @param path string
 function love.graphics.newImage(path)
     path = "Assets/" .. path
 
-    local img = o_graphics_newImage(path)
+    local img
+    if g_cache[path] then
+        img = g_cache[path]
+    else
+        img = o_graphics_newImage(path)
+        g_cache[path] = img
+    end
     return {
         img = img,
         x = 0,
@@ -16,6 +26,7 @@ function love.graphics.newImage(path)
         height = img:getHeight(),
         alpha = 1,
         visible = true,
+        camera = nil,
         setFilter = function(self, min, mag)
             self.img:setFilter(min, mag)
         end,
@@ -27,6 +38,9 @@ function love.graphics.newImage(path)
             if not self.visible then return end
             local lastColor = {love.graphics.getColor()}
             love.graphics.push()
+            if self.camera then
+                love.graphics.translate(-self.camera.x, -self.camera.y)
+            end
             love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], self.alpha * (alpha or 1))
             o_graphics_draw(self.img, self.x, self.y, self.angle, self.scale.x, self.scale.y)
             love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], lastColor[4])
@@ -69,7 +83,13 @@ function love.graphics.newAnim(folder, fps, loops)
     while true do
         print(folder .. "/_" .. i .. ".png")
         if love.filesystem.getInfo("Assets/" .. folder .. "/_" .. i .. ".png") then
-            local img = love.graphics.newImage(folder .. "/_" .. i .. ".png")
+            local img
+            if g_cache[folder .. "/_" .. i .. ".png"] then
+                img = g_cache[folder .. "/_" .. i .. ".png"]
+            else
+                img = love.graphics.newImage(folder .. "/_" .. i .. ".png")
+                g_cache[folder .. "/_" .. i .. ".png"] = img
+            end
             table.insert(images, img)
             i = i + 1
         else
@@ -90,6 +110,7 @@ function love.graphics.newAnim(folder, fps, loops)
         loops = loops or false,
         playing = true,
         visible = true,
+        camera = nil,
         setFilter = function(self, min, mag)
             for _, img in ipairs(self.images) do
                 img:setFilter(min, mag)
@@ -103,6 +124,9 @@ function love.graphics.newAnim(folder, fps, loops)
             if not self.visible then return end
             local lastColor = {love.graphics.getColor()}
             love.graphics.push()
+            if self.camera then
+                love.graphics.translate(-self.camera.x, -self.camera.y)
+            end
             love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], self.alpha * (alpha or 1))
             love.graphics.draw(self.images[self.current], self.x, self.y, self.angle, self.scale.x, self.scale.y)
             love.graphics.setColor(lastColor[1], lastColor[2], lastColor[3], lastColor[4])
@@ -152,9 +176,13 @@ function love.graphics.rectangle(mode, x, y, width, height, radius, segments)
         alpha = 1,
         color = {1, 1, 1},
         visible = true,
+        camera = nil,
         draw = function(self, alpha)
             if not self.visible then return end
             love.graphics.push()
+            if self.camera then
+                love.graphics.translate(-self.camera.x, -self.camera.y)
+            end
             local last = {love.graphics.getColor()}
             love.graphics.setColor(self.color[1], self.color[2], self.color[3], self.alpha * (alpha or 1))
             o_graphics_rectangle(self.mode, self.x, self.y, self.width, self.height, self.radius, self.segments)

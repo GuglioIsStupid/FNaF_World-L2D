@@ -5,7 +5,7 @@ require("Modules.Love.Audio")
 
 BaseFrame = require("Base.BaseFrame")
 
-local FRAMETOSTART = "TitleScreen"
+local FRAMETOSTART = "Overworld"
 
 DIALOGUE_FONT = love.graphics.newFont("Assets/DOSFont.ttf", 20)
 DIALOGUE_FONT:setFilter("nearest", "nearest")
@@ -55,4 +55,22 @@ function love.draw()
     if CURRENTFRAME and CURRENTFRAME.draw then
         CURRENTFRAME:draw()
     end
+
+    local str = [[
+    FPS: %d
+    Memory: %d KB
+    Graphics Memory: %d MB
+    Draw Calls: %d
+    ]]
+
+    local stats = love.graphics.getStats()
+    local format = str:format(love.timer.getFPS(), collectgarbage("count"), stats.texturememory / 1024 / 1024, stats.drawcalls)
+    love.graphics.setColor(0, 0, 0)
+    for x = -1, 1 do
+        for y = -1, 1 do
+            love.graphics.printf(format, 1+x, 1+y, love.graphics.getWidth(), "right")
+        end
+    end
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(format, 0, 0, love.graphics.getWidth(), "right")
 end
